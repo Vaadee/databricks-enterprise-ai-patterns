@@ -71,7 +71,7 @@ rand_uuid() {
 }
 
 # curl wrapper: saves body to $RESP_FILE, returns HTTP status code
-RESP_FILE=$(mktemp /tmp/smoke_resp.XXXXXX.json)
+RESP_FILE=$(mktemp /tmp/smoke_resp_XXXXXX.json)
 trap 'rm -f "$RESP_FILE" /tmp/smoke_submit.json /tmp/smoke_long.json /tmp/smoke_poll.json /tmp/smoke_c1.json /tmp/smoke_c2.json' EXIT
 
 http() {

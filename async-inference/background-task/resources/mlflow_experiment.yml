@@ -2,9 +2,3 @@ resources:
   experiments:
     inference_tracking:
       name: /Workspace/Users/${workspace.current_user.userName}/${var.app_name}-${bundle.target}
-      permissions:
-        # All workspace users get CAN_MANAGE — covers the app SP, worker job identity,
-        # and any team member browsing runs. Avoids referencing a specific SP that may
-        # not exist in every target workspace.
-        - level: CAN_MANAGE
-          group_name: users

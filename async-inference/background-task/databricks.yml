@@ -78,6 +78,12 @@ targets:
       host: ${workspace.host}
     run_as:
       service_principal_name: ${var.service_principal}
+    resources:
+      experiments:
+        inference_tracking:
+          permissions:
+            - level: CAN_MANAGE
+              service_principal_name: ${var.service_principal}
 
 # Example client workspace override:
 #

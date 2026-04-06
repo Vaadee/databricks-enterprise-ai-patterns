@@ -5,10 +5,14 @@ resources:
       description: "Async long-running inference gateway"
       source_code_path: ../app
 
-      # Grant the app permission to trigger the worker job.
-      # Databricks Apps injects {name}_id as an env var → WORKER_JOB_ID.
+      # Grant the app's managed SP access to required resources.
+      # Databricks Apps injects {name}_id as an env var for each resource.
       resources:
         - name: WORKER_JOB
           job:
             id: ${resources.jobs.lakeflow_job_worker.id}
             permission: CAN_MANAGE_RUN
+        - name: INFERENCE_EXPERIMENT
+          experiment:
+            experiment_id: ${resources.experiments.inference_tracking.id}
+            permission: CAN_MANAGE

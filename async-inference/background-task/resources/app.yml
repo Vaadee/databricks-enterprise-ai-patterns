@@ -4,4 +4,9 @@ resources:
       name: ${var.app_name}-${bundle.target}
       description: "Async inference — background tasks, no external Lakeflow worker"
       source_code_path: ../app
-      # No job resource reference needed — inference runs in-process
+      # Grant the app's managed SP access to the MLflow experiment for run logging.
+      resources:
+        - name: INFERENCE_EXPERIMENT
+          experiment:
+            experiment_id: ${resources.experiments.inference_tracking.id}
+            permission: CAN_MANAGE
