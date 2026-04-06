@@ -51,113 +51,100 @@ App startup (crash recovery):
 
 ## Prerequisites
 
-- Databricks workspace (AWS or Azure) with Lakebase Autoscaling enabled
-- Databricks CLI **≥ 0.287.0**
-  ```bash
-  databricks --version
-  ```
-- Authenticated CLI profile:
+- Databricks workspace (AWS or Azure) with **Lakebase Autoscaling** enabled
+- Databricks CLI **≥ 0.287.0** — check with `databricks --version`
+- An authenticated CLI profile:
   ```bash
   databricks auth login --profile <your-profile>
   ```
-- For **Azure OpenAI** path only: an Azure OpenAI resource with a GPT-4 deployment
+- **Inference provider** — choose one:
+  - **Databricks Foundation Models** *(recommended, zero secrets needed)* — default, works out of the box
+  - **Azure OpenAI** — requires an Azure OpenAI resource with a GPT-4 deployment; `start_demo.sh` will prompt for credentials
 
 ---
 
-## Inference provider options
-
-### Option A — Databricks Foundation Models (recommended, no secrets needed)
-
-Set in `app/app.yaml`:
-```yaml
-- name: FOUNDATION_MODEL_NAME
-  value: "databricks-meta-llama-3-3-70b-instruct"
-```
-
-Already set by default. No secret scope required.
-
-### Option B — Azure OpenAI
-
-Create a secret scope and populate credentials (see [Step 2](#2-optional-azure-openai--create-and-populate-secret-scope)).
-Set `FOUNDATION_MODEL_NAME` to empty string in `app/app.yaml`.
-
----
-
-## Step-by-step setup
+## Getting started
 
 All commands run from this directory:
+
 ```bash
 cd databricks-enterprise-ai-patterns/async-inference/background-async-inference
+```
+
+`start_demo.sh` handles everything end-to-end: bundle deploy, schema migration, app start, and prints your URL + token ready to use. It prompts for your Databricks profile, inference provider, and app name (defaults work for most cases).
+
+```bash
+# Interactive — prompts for profile, provider, app name
+bash start_demo.sh
+
+# Skip the profile prompt
+bash start_demo.sh --profile <your-profile>
+
+# Deploy + start + run smoke test automatically
+bash start_demo.sh --profile <your-profile> --smoke
+```
+
+At the end you'll see a summary with the app URL, a masked token, and ready-to-paste `export` commands.
+
+### Stop the demo
+
+```bash
+# Stop the app, keep all resources (Lakebase data, MLflow runs intact)
+bash stop_demo.sh --profile <your-profile>
+
+# Stop + permanently destroy the app, Lakebase project, MLflow experiment, Postgres data
+bash stop_demo.sh --profile <your-profile> --destroy
+```
+
+---
+
+<details>
+<summary><strong>Manual setup (without demo scripts)</strong></summary>
+
+```bash
 export PROFILE=your-profile-name
 ```
 
----
-
-### 1. Deploy the bundle
-
-Creates the Lakebase project, MLflow experiment, schema job, and Databricks App.
-
+**1. Deploy the bundle**
 ```bash
 databricks bundle deploy --profile $PROFILE
 ```
 
----
-
-### 2. (Optional — Azure OpenAI) Create and populate secret scope
-
-Skip this step if using Foundation Models.
-
+**2. (Optional — Azure OpenAI only) Create and populate secret scope**
 ```bash
 databricks secrets create-scope background-async-inference --profile $PROFILE
-
 databricks secrets put-secret background-async-inference azure-openai-endpoint \
   --string-value "https://<your-resource>.openai.azure.com/" --profile $PROFILE
-
 databricks secrets put-secret background-async-inference azure-openai-key \
   --string-value "<your-key>" --profile $PROFILE
-
 databricks secrets put-secret background-async-inference azure-deployment-name \
   --string-value "<your-deployment-name>" --profile $PROFILE
 ```
 
----
-
-### 3. Run the schema migration (once, after first deploy)
-
-Creates the three Lakebase tables, provisions a Postgres role for the app SP, and grants the app SP CAN_MANAGE on the MLflow experiment.
-
+**3. Run schema migration** *(once, or after schema changes)*
 ```bash
 databricks bundle run schema_migration --profile $PROFILE
 ```
 
----
-
-### 4. Start the app
-
+**4. Start the app** *(re-run after every `bundle deploy`)*
 ```bash
 databricks bundle run background_async_inference_app --profile $PROFILE
 ```
 
-> **Important:** Re-run this after every `bundle deploy` to pick up code changes.
-
----
-
-### 5. Get the app URL
-
+**5. Get the app URL**
 ```bash
 export APP_URL=$(databricks apps get background-async-inference-dev --profile $PROFILE --output json \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['url'])")
 echo "APP_URL=$APP_URL"
 ```
 
----
-
-### 6. Get a bearer token
-
+**6. Get a bearer token**
 ```bash
 export TOKEN=$(databricks auth token --profile $PROFILE --output json \
   | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
 ```
+
+</details>
 
 ---
 
@@ -225,11 +212,15 @@ Response when `DONE`:
 
 ## Smoke test
 
-```bash
-APP_URL=$APP_URL PROFILE=$PROFILE python smoke_test.py
-```
-
 Runs 26 checks: health, readiness, input validation, 404s, short job e2e, long job with STREAMING observation, concurrent submits.
+
+```bash
+# Python (primary)
+APP_URL=$APP_URL PROFILE=$PROFILE python3 smoke_test.py
+
+# Shell / curl fallback (e.g. if Python SSL issues on macOS)
+APP_URL=$APP_URL PROFILE=$PROFILE bash smoke_test.sh
+```
 
 ---
 
