@@ -1,0 +1,14 @@
+resources:
+  apps:
+    long_running_inference_app:
+      name: ${var.app_name}-${bundle.target}
+      description: "Async long-running inference gateway"
+      source_code_path: ../app
+
+      # Grant the app permission to trigger the worker job.
+      # Databricks Apps injects {name}_id as an env var → WORKER_JOB_ID.
+      resources:
+        - name: WORKER_JOB
+          job:
+            id: ${resources.jobs.long_running_inference_worker.id}
+            permission: CAN_MANAGE_RUN
