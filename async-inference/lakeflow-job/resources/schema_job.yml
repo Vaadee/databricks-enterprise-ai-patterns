@@ -1,0 +1,38 @@
+resources:
+  jobs:
+    schema_migration:
+      name: "[${bundle.target}] ${var.app_name}-schema-migration"
+      description: "One-time schema migration — run once after bundle deploy."
+
+      tasks:
+        - task_key: migrate
+          spark_python_task:
+            python_file: ../infra/schema/migrate.py
+            # DAB silently drops task-level environment_variables for serverless jobs.
+            # All config is passed as CLI parameters; migrate.py injects them into os.environ.
+            parameters:
+              - "--lakebase_project_id"
+              - "${var.lakebase_project_id}"
+              - "--lakebase_branch_id"
+              - "${var.lakebase_branch_id}"
+              - "--lakebase_db_name"
+              - "${var.lakebase_db_name}"
+              - "--app_name"
+              - "${var.app_name}-${bundle.target}"
+              - "--mlflow_experiment_name"
+              - "/Workspace/Users/${workspace.current_user.userName}/${var.app_name}-${bundle.target}"
+          environment_key: schema_env
+
+      environments:
+        - environment_key: schema_env
+          spec:
+            client: "1"
+            dependencies:
+              - "psycopg[binary]>=3.0"
+              - "databricks-sdk>=0.81.0"
+              - "colorlog>=6.0"
+              - "mlflow>=2.10.0"
+
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}

@@ -1,0 +1,7 @@
+resources:
+  postgres_projects:
+    main:
+      project_id: ${var.lakebase_project_id}
+      display_name: ${var.app_name}
+      pg_version: 17
+      # Lakebase auto-creates the production branch and default endpoint on project creation

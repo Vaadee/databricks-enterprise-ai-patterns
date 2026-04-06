@@ -1,0 +1,20 @@
+[project]
+name = "databricks-enterprise-ai-patterns"
+requires-python = ">=3.11"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "pre-commit>=4.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".claude"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "worker", "db", "routers", "services", "models"]
