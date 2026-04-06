@@ -1,0 +1,6 @@
+# FastAPI and uvicorn are pre-installed in the Databricks Apps runtime — do not add them.
+psycopg[binary]>=3.0
+databricks-sdk>=0.81.0
+openai
+colorlog>=6.0
+mlflow>=2.10.0

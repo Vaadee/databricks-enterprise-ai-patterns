@@ -1,0 +1,31 @@
+# Databricks Apps runtime config.
+# Static env vars go here. Dynamic values go in resources/app.yml.
+command:
+  - "uvicorn"
+  - "app:app"
+  - "--host"
+  - "0.0.0.0"
+  - "--port"
+  - "8000"
+
+env:
+  - name: LAKEBASE_PROJECT_ID
+    value: "background-async-inference"
+  - name: LAKEBASE_BRANCH_ID
+    value: "production"
+  - name: LAKEBASE_DB_NAME
+    value: "databricks_postgres"
+  - name: AZURE_API_VERSION
+    value: "2024-02-01"
+  - name: FOUNDATION_MODEL_NAME
+    value: "databricks-meta-llama-3-3-70b-instruct"
+  - name: FLUSH_EVERY
+    value: "1000"
+  - name: TOKEN_REFRESH_SECS
+    value: "3000"
+  - name: DB_POOL_SIZE
+    value: "5"
+  - name: MAX_CONCURRENT_INFERENCES
+    value: "20"
+  - name: MLFLOW_EXPERIMENT_NAME
+    value: "/Workspace/Users/vaadeendra@datanimbus.com/background-async-inference-dev"
