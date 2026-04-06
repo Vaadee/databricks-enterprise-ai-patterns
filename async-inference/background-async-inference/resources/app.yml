@@ -1,7 +1,0 @@
-resources:
-  apps:
-    background_async_inference_app:
-      name: ${var.app_name}-${bundle.target}
-      description: "Async inference — background tasks, no external Lakeflow worker"
-      source_code_path: ../app
-      # No job resource reference needed — inference runs in-process

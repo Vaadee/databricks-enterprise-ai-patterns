@@ -1,0 +1,112 @@
+bundle:
+  name: lakeflow-job
+
+include:
+  - resources/*.yml
+
+# ── All configurable values live here ────────────────────────────────────────
+# To deploy for a different client/env, override variables in the target block
+# or pass --var flags at the CLI. Zero code changes required.
+variables:
+
+  # Identity — drives all resource names
+  app_name:
+    description: "Base name for all resources. Change per client/deployment."
+    default: "lakeflow-job"
+
+  # Secret scope — where all credentials are stored
+  secret_scope:
+    description: "Databricks secret scope name."
+    default: "lakeflow-job"
+
+  # Service principal for prod run_as
+  service_principal:
+    description: "Service principal name for prod deployments."
+    default: "lakeflow-job-sp"
+
+  # Lakebase Autoscaling
+  lakebase_project_id:
+    description: "Lakebase Autoscaling project ID."
+    default: "lakeflow-job"
+  lakebase_branch_id:
+    description: "Lakebase branch."
+    default: "production"
+  lakebase_db_name:
+    description: "Postgres database name inside the project."
+    default: "databricks_postgres"
+
+  # Worker tuning
+  worker_max_concurrent_runs:
+    description: "Max parallel worker job runs."
+    default: "50"
+
+  # Reconciler schedule
+  reconciler_cron:
+    description: "Quartz cron for the reconciler job."
+    default: "0 */5 * * * ?"
+
+  # App / connection tuning
+  flush_every:
+    description: "Chars buffered before flushing a chunk to Lakebase."
+    default: "1000"
+  token_refresh_secs:
+    description: "Seconds between OAuth token refreshes in the app (keep < 3600)."
+    default: "3000"
+  db_pool_size:
+    description: "SQLAlchemy connection pool size (app only)."
+    default: "5"
+  db_pool_max_overflow:
+    description: "SQLAlchemy pool max overflow (app only)."
+    default: "10"
+
+  # Azure OpenAI
+  azure_api_version:
+    description: "Azure OpenAI API version."
+    default: "2024-02-01"
+
+  # Inference provider — set to a Foundation Model name to skip Azure OpenAI secrets
+  foundation_model_name:
+    description: "Databricks Foundation Model to use. Empty = use Azure OpenAI."
+    default: "databricks-meta-llama-3-3-70b-instruct"
+
+  # Notifications
+  notification_email:
+    description: "Email address for job failure alerts."
+    default: "your-team@company.com"
+
+  # Reconciler stale-job thresholds
+  stale_pending_minutes:
+    description: "Minutes before a PENDING job is considered stale and re-triggered."
+    default: "3"
+  stale_running_minutes:
+    description: "Minutes before a RUNNING job is considered stuck and reset to PENDING."
+    default: "5"
+  stale_streaming_minutes:
+    description: "Minutes before a STREAMING job is considered stuck and marked FAILED."
+    default: "30"
+
+# ── Targets — override only what differs per env/client ──────────────────────
+targets:
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    mode: production
+    workspace:
+      host: ${workspace.host}
+    run_as:
+      service_principal_name: ${var.service_principal}
+
+# Example client workspace override:
+#
+#   acme-prod:
+#     mode: production
+#     workspace:
+#       host: https://acme.azuredatabricks.net
+#     variables:
+#       app_name: acme-inference
+#       secret_scope: acme-inference
+#       lakebase_project_id: acme-inference
+#       notification_email: ops@acme.com
+#       worker_max_concurrent_runs: "100"
