@@ -23,6 +23,7 @@ Usage:
 
 import json
 import os
+import ssl
 import subprocess
 import sys
 import time
@@ -123,8 +124,11 @@ def _request(method: str, path: str, token: str, body: dict | None = None) -> tu
         "Accept":        "application/json",
     }
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
             return resp.status, json.loads(resp.read())
     except urllib.error.HTTPError as e:
         try:

@@ -79,7 +79,26 @@ def stream_completion(conn: psycopg.Connection, job_id: str, payload: dict) -> N
         if not is_foundation_model:
             create_kwargs["stream_options"] = {"include_usage": True}
 
-        stream = client.chat.completions.create(**create_kwargs)
+        try:
+            stream = client.chat.completions.create(**create_kwargs)
+        except Exception as guardrail_exc:
+            if is_foundation_model and "guardrail" in str(guardrail_exc).lower() and "streaming" in str(guardrail_exc).lower():
+                logger.warning(
+                    "job_id=%s workspace output guardrails block streaming — retrying without stream", job_id
+                )
+                create_kwargs["stream"] = False
+                resp = client.chat.completions.create(**create_kwargs)
+                content = resp.choices[0].message.content or ""
+                total_tokens = resp.usage.total_tokens if resp.usage else 0
+                prompt_tokens = resp.usage.prompt_tokens if resp.usage else 0
+                queries.mark_streaming(conn, job_id)
+                marked_streaming = True
+                queries.write_chunk(conn, job_id, 0, content)
+                full_text_parts.append(content)
+                buffer = ""
+                stream = iter([])
+            else:
+                raise
 
         for event in stream:
             # Usage is delivered in the final chunk

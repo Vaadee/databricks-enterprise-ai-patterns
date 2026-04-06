@@ -145,10 +145,9 @@ databricks bundle run background_async_inference_app --profile $PROFILE
 ### 5. Get the app URL
 
 ```bash
-databricks apps get background-async-inference-dev --profile $PROFILE --output json \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['url'])"
-
-export APP_URL=https://background-async-inference-dev-<workspace-id>.databricksapps.com
+export APP_URL=$(databricks apps get background-async-inference-dev --profile $PROFILE --output json \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['url'])")
+echo "APP_URL=$APP_URL"
 ```
 
 ---
@@ -176,7 +175,10 @@ curl -s -X POST $APP_URL/jobs/submit \
       {"role": "user", "content": "Summarize the history of the Roman Empire in detail."}
     ],
     "max_tokens": 4096
-  }' | python3 -m json.tool
+  }' | tee /tmp/submit_response.json | python3 -m json.tool
+
+export JOB_ID=$(python3 -c 'import json; print(json.load(open("/tmp/submit_response.json"))["job_id"])')
+echo "JOB_ID=$JOB_ID"
 ```
 
 Response `202`:
@@ -224,9 +226,7 @@ Response when `DONE`:
 ## Smoke test
 
 ```bash
-APP_URL=https://background-async-inference-dev-<workspace-id>.databricksapps.com \
-PROFILE=your-profile \
-python smoke_test.py
+APP_URL=$APP_URL PROFILE=$PROFILE python smoke_test.py
 ```
 
 Runs 26 checks: health, readiness, input validation, 404s, short job e2e, long job with STREAMING observation, concurrent submits.
@@ -303,6 +303,9 @@ On app restart, any RUNNING/STREAMING jobs are automatically reset to PENDING an
 
 ### Token expiry
 If you see `password authentication failed` in app logs, re-run the schema migration to re-provision the Postgres role.
+
+### Output guardrails (workspace policy)
+If you see `output_guardrails is not supported in streaming` in app logs, the workspace has Output Guardrails (PII detection, toxicity filters) enabled at the admin level on serving endpoints. The app automatically detects this and retries the request without streaming — the job will still complete, but tokens won't be flushed incrementally to `job_chunks`.
 
 ---
 
